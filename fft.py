@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from numpy.fft import rfft, rfftfreq
-from tkinter import Tk, filedialog
+from tkinter import Tk, filedialog, Button, Label
 
 ##import cProfile
 
@@ -26,9 +26,9 @@ def adjust_parameters_based_on_duration(data, sampling_rate, base_duration=20*60
     total_duration = len(data) / sampling_rate
     scale_factor = total_duration / base_duration
 
-    window_size = max(int(base_window_size * sampling_rate * scale_factor), sampling_rate)
-    step_size = max(int(base_step_size * sampling_rate * scale_factor), int(sampling_rate / 2))
-    smoothing_window = max(int(base_smoothing_window * scale_factor), 1)
+    window_size = int(max(int(base_window_size * sampling_rate * scale_factor), sampling_rate))
+    step_size = int(max(int(base_step_size * sampling_rate * scale_factor), int(sampling_rate / 2)))
+    smoothing_window = int(max(int(base_smoothing_window * scale_factor), 1))
     
     return window_size, step_size, smoothing_window
 
@@ -72,7 +72,7 @@ def plot_relative_power_over_time(data, bands, sampling_rate):
     plt.show()
 
 # Function to process EEG file
-def process_eeg_file(file_path):
+def process_eeg_file(file_path, channel):
     bands = {
         'Delta': (0.5, 4),
         'Theta': (4, 8),
@@ -83,18 +83,40 @@ def process_eeg_file(file_path):
     data = pd.read_csv(file_path, delimiter=';')
     sampling_rate = data['Sampling Rate'].iloc[0]
     
-    eeg_data = data['Channel 1'].dropna()
+    eeg_data = data[channel].dropna()
     
     plot_relative_power_over_time(eeg_data, bands, sampling_rate)
 
+# Function to handle channel selection and process the file
+def handle_channel_selection(file_path, channel):
+    root.destroy()
+    process_eeg_file(file_path, channel)
+
 # Main function to run the program
 def main():
-    Tk().withdraw()
+    global root
+    root = Tk()
+    root.title("EEG Channel Selection")
+
+    # Display a label
+    label = Label(root, text="Select the EEG Channel to Process:")
+    label.pack(pady=10)
+
+    # Button for Channel 1
+    channel1_button = Button(root, text="Channel 1", command=lambda: handle_channel_selection(file_path, 'Channel 1'))
+    channel1_button.pack(pady=5)
+
+    # Button for Channel 2
+    channel2_button = Button(root, text="Channel 2", command=lambda: handle_channel_selection(file_path, 'Channel 2'))
+    channel2_button.pack(pady=5)
+
+    # File selection
     file_path = filedialog.askopenfilename()
-    
-    if file_path:
-        process_eeg_file(file_path)
+    if not file_path:
+        root.destroy()
+        return
+
+    root.mainloop()
 
 if __name__ == "__main__":
-    ##cProfile.run('main()')
     main()
